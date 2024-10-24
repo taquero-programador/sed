@@ -2,4 +2,5 @@
 
 ## Descripcion general
 Normalmente `sed` se invoca as\i:
+
     SCRIPT SCRIPT INPUTFILE...
