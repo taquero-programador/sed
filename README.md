@@ -28,3 +28,9 @@ tambi{en} `W` `s///w` para escribir la salida en otros archivos. El siguiente co
 ninguna salida:
 
     sed -i 's/hello/world/' file.txt
+
+Por defecto, `sed` imprime todas las entradas procesadas (excepto las entradas que han sido
+modificadas/eliminadas por comandos como `d`). Use `-n` para suprimir la salida. y el comando
+`-p` para imprimir líneas especificas. El siguiente comando imprime solo lq línea 45 del archivo de entrada:
+
+    sed -n '45p' file.txt
