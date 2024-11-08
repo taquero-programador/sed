@@ -95,7 +95,11 @@ echo 1 | sed --debug '\%1%s21232'
 **`-e script`** o **`--expression=script`**: Añade los comandos de _script_ para establecer los comandos
 que serán ejecutados mientras procesa la entrada.
 
+<<<<<<< HEAD
 **`-f script_file`** o **`--file=script-file`**: Añade comando a un archio de _script-file_ para definir los comando
+=======
+**`-f script_file`** o `--file=script-file`: Añade comando a un archio de _script-file_ para definir los comando
+>>>>>>> d644cbdacd1beb3e6b03097d17a7bad62d7a3c38
 que seran ejecutados mientras procesa la entrada.
 
 **`-i[suffix]`** o **`--in-place[=suffix]`**: Esta opción especifica los archivos que serán modificados en su lugar.
