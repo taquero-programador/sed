@@ -105,3 +105,77 @@ Esta opción implica usar `-s`.
 
 Cuando el final del archivo es alcanzado, el archivo temporal es renombrado al nombre original del archivo de salida. La extesión, si se suministra,
 es usada para modificar el nombre del archivo anterior, haciendo una copia del archivo.
+
+Se sigue esta regla: si la extensión no contiene `*`, luego se agrega al final del nombre de
+archivo como un sufijo; si la extensión contiene uno o más `*` caracteres, entonces cada uno
+(asterisco) se reemplaza con el nombre de archivo actual. Esto permite agregar un prefijo al
+archivo de respaldo, en lugar de un sufijo, o incluso para colocar copias de seguridad de los
+archivos originales en otro directorio (siempre que el directorio ya exista).
+
+Si no se proporciona ninguna extensión, el archivo original es sobrescrito sin hacer una copia
+de seguridad.
+
+`i` toma un argumento opcional, no debería ir ser seguido por otras opciones cortas:
+
+**`sed -Ei '...' FILE`**: Igual como `-E` `-i` sin un sufijo de respalo `-FILE` sera editado
+en du lugar sin crear un respaldo.
+
+**`sed -iE '...' FILE`**: Esto es equivalente a `--in-place=E`, creando `FILE` como un respaldo
+de `FILE`.
+
+Tenga cuidado de usar `-n` con `-i`: el primero deshailita la impresión automática de líneas y
+este último cambia el archivo original sin crear una copia de seguridad. Utilizado
+descuidadamente (y sin el comando `p`), el archivo de salida estará vacío.
+
+```sh
+# WRONG USAGE: 'FILE' will be truncated.
+sed -ni 's/foo/bar' FILE
+```
+
+**`-l _N_`** o **`--line-lenght=_N_`**: Especifica la longitud de envoltura de línea
+predeterminada para el comando `l`. Una longitud de 0 (cero) significa nunca envolver líneas
+largas. Si no es especificado, se considera que es 70.
+
+**`--posix`**: GNU `sed` incluye varias extensiones para POSIX sed. Para simplificar la
+escritura de scripts portátiles, está opción deshabilita todas las extensiones que este manual
+documenta incluyendo comandos adicionales. Las mayorías de las extensiones aceptan `sed`
+programas que están fuera de la sintaxis ordenada por POSIX, pero alguno de ellos (como el
+comportamiento de `N`) en realidad viola el estándar. Si desea deshabilitar solo el último tipo
+de extensión, puede establecer la variable `POSIXLY_CORRECT` a un valor vacío.
+
+**`-b`** o **`--binary`**: Esta opción está disponible en todas las plataformas, pero solo es
+efectiva cuando el sistema operativa hace una distinción entre archivos de texto y archivos
+binarios. Cuando se hace tal distinción (como es el caso de MS-DOS Windows). Los archivos
+Cygwin están compuestos de líneas separadas por una devolución de carro y un carácter de
+alimentación de línea, y `sed` no ve el CR final. Cuando se especifica esta opción, `sed`
+abrirá los archivos en modo binario, por lo tanto, no solicitan este procesamiento especial y
+considerando las líneas para terminar en una alimentación de línea.
+
+**`--follow-symlinks`**: Esta opción solo está disponible en plataformas que admiten enlaces
+simbólicos y tienen efecto solo si la opción `-i` se especifica. En este caso, si el archivo
+que se especifica en la línea de comandos hay un enlace simbólico `sed` sigue el enlace y edita
+el destino final al enlace. El comportamiento predeterminado es romper el enlace simbólico,
+para que el destino del enlace no se modifique.
+
+**`-E, -r`** o **`--regexp-extended`**: Use expresiones regulares extendidas en lugar de
+expresiones regulares básicas. Los regex extendidos son aquellas que aceptan `egrep`.
+Históricamente, esta era una extensión de GNU pero el `-E`, se ha agregado al estándar POSIX.
+
+**`-s`** o **`--separate`**: Por defecto, `sed` considerará los archivos especificados  en la
+línea de comandos como una sola secuencia larga continua. Este GNU `sed` permite al usuario
+consideralos como archivos separados: direcciones de rango (como `/abc/,/def/`) no están
+permitidas para abarcar varios archivos, los números de línea son relativos al inicio de cada
+archivo, `$` se refiere a la última línea de cada archivo, y archivos invocados desde el
+comando `R` se rebobinan en el inicio de cada archivo.
+
+**`--sandbox`**: En modo sanbox, `e/w/r` los comando son rechazados (programas que lo contiene
+serán abortados sin ser considerados). el modo Sanbox garantiza que `sed` solo opera en los
+archivos de entrada en la línea de comandos, y no se pueden ejecutar comandos externos.
+
+**`-u`** o **`--unbuffered`**: Sin bufer tanto de entrada como de salida tan mínimo como
+práctico. (Esto es particularmente útil si la entrada proviene de `tail -f`, y deseas ver la
+salida tranformada lo antes posible).
+
+**`-z`**
+**`--null-data`**
+**`--zero-terminated`**
