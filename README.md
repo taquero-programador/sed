@@ -176,6 +176,29 @@ archivos de entrada en la línea de comandos, y no se pueden ejecutar comandos e
 práctico. (Esto es particularmente útil si la entrada proviene de `tail -f`, y deseas ver la
 salida tranformada lo antes posible).
 
-**`-z`**
-**`--null-data`**
-**`--zero-terminated`**
+**`-z`**, **`--null-data`** o **`--zero-terminated`**: Trata la entrada como un conjunto de
+líneas, cada una terminada por un byte cero (el carácter ASCII `NUL`) en lugar de una nueva
+línea. Esta opción puede ser utilizada con comandos como `sort -z` and `find -print0` para
+procesar nombres de archivos arbitrarios.
+
+Si no se dan las opciones `-e`, `-f`, `--expression` o `--file` en la línea de comandos,
+entonces el primer arguemento de no opción en la línea de comandos es tomando como el script
+para ser ejecutado.
+
+Si no quedan parámetros de línea de comandos después de procesar lo anterior, estos parámetros
+se interpretan como los nombre de los archivos de entrada a ser procesados. Un nombre de
+archivo `-` se refiere al flujo de entrada estándar. La entrada estándar se procesará  si no se
+especifican nombre de archivo.
+
+### Estado de salida
+Un estado de salida de cero indica éxito y un valor distinto a cero indica falla. GNU `sed`
+devuelve los siguiente estados de salida:
+
+**`0`**: Finalización exitosa.
+
+**`1`**: Comando no válido, sintaxis no válida, expresión regular no válida o un comando de
+extesnión GNU `sed` utilizado con `--posix`.
+
+**`2`**: Uno o más de los archivos de entrada especificado en la línea de comandos no puede ser
+abierto (por ejemplo, si no se encuentra un archivo o se deniega el permiso de lectura). El
+procesamiento continuó con otros archivos.
