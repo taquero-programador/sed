@@ -17,7 +17,7 @@ Por ejemplo, para reemplazar todas las ocurrencias de `hello` a `world` en el ar
 
 Si no se especifica INPUTFILE, o si INPUTFILE es `-`, `sed` filtrara el contenido de la entrada estándar.
 Los siguientes comandos son equivalentes:
-```bash
+```sh
 sed 's/hello/world/' input.txt > ouyput.txt
 sed 's/hello/world/' < input.txt > output.txt
 cat input.txt | sed 's/hello/world/' - > output.txt
@@ -45,7 +45,7 @@ como archivos de entrada. Si `-e` o `-f` son usados para especificar un _script_
 Las opciones `-e` y `-f` pueden ser combinadas, y pueden aparecer varias veces (en cuyo caso el guión final efectivo será la concatenación de todos los guiones individuales).
 
 Los siguientes ejemplos son equivalentes:
-```bash
+```sh
 sed 's/hello/world' input.txt > output.txt
 
 sed -e 's/hello/world' input.txt > output.txt
@@ -72,12 +72,12 @@ El formato largo par invocar `sed` es:
 solo produce la salida cuando se le dice explicitamente a través del comando `p`.
 
 **`--debug`**: Imprime la entrada `sed` de forma canónica con una descripción de la ejecución:
-```bash
+```sh
 echo 1 | sed '\%1%s21232'
 # 3
 ```
 
-```bash
+```sh
 echo 1 | sed --debug '\%1%s21232'
 #SED PROGRAM:
 #  /1/ s/1/3/
@@ -202,3 +202,263 @@ extesnión GNU `sed` utilizado con `--posix`.
 **`2`**: Uno o más de los archivos de entrada especificado en la línea de comandos no puede ser
 abierto (por ejemplo, si no se encuentra un archivo o se deniega el permiso de lectura). El
 procesamiento continuó con otros archivos.
+
+**`4`**: Un error I/O de procesamiento grave durante el tiempo de ejecución GNU `sed`
+abortado inmediatamente.
+
+Además, los comandos `q` y `Q` puden ser utilizados para terminar `sed` con un código de salida
+personalizado:
+
+```sh
+echo | sed 'Q42' ; echo $?
+# 42
+```
+
+## `sed` scripts
+
+### `sed` descripción general del script
+Un programa `sed` consisten en uno o más comandos `sed`, pasados uno a uno o más opciones
+`-e`, `-f`, `--expression` and `--file`, o la primera no opción si el argumento es cero
+esa opciones serán usadas. Este documento se refiere a al script `sed`; se entiende que esto
+significa la concatenación en orden de todos los scripts y archivos de script.
+
+Los comandos `sed` siguen esta sintaxis:
+
+    [addr]X[options]
+
+X es una sola letra de comando `sed`. `[addr]` es una dirección de línea opcional. Si `[addr]`   
+se especifica, el comando X se ejecutará solo en las líneas coincidentes. `[addr]` puede ser
+un único número de línea, una expresión regular o un rango de líneas. Adicional `[addr]` se
+utiliza para algunos comandos `sed`.
+
+El siguiente ejemplo elimina las líneas 30 y 35 en la entrada. `30,35` es un rango de
+direcciones. `d` es el comando eliminar:
+
+    sed '30,35d' input.txt > output.txt
+
+El siguiente ejemplo imprime todas las entradas hasta una línea comenzando con la palabra `foo`.
+Si se encuentra dicha línea, `sed` terminará con el estado de salida 42. Si no se encontró dicha
+línea (y no se produjo ningún otro error), `sed` saldrá con el estado 0. `/^foo/` es una
+dirección de expresión regular. `q` termina el comando. `42` es la opción del comando.
+
+    sed '/^foo/q42' input > output.txt
+
+Los comandos dentro de un script se pueden separar por punpt y coma (`;`) o nuevas líneas
+(ASCII 10). Se pueden especficiar mútiples scripts con `-e` o ``-f.
+
+Los siguientes ejemplos son todos equivalentes. Realizar dos operaciones `sed`: eliminar
+cualquier línea que coincida con la expresión regular `/^foo/`, y reemplazando todas las
+ocurrencas de la cadena `hola` con `mundo`:
+
+```sh
+sed '/^foo/d/ ; s/hello/world/' input.txt > output.txt
+
+sed -e '/^foo/d' -e 's/hello/world/' input.txt > output.txt
+
+echo '/^foo/d' > script.sed
+echo 's/hello/world/' >> script.sed
+sed -f script.sed input.txt > output.txt
+
+echo 's/hello/world/' > script2.sed
+sed -e '/^foo/d' -f script2.sed input.txt > output.txt
+```
+
+Comandos como `a`, `c` e `i` debido a su sintaxis, no pueden ser seguidos por un punto y coma,
+por lo tanto, debe ser terminado con nuevas líneas o ser colocado al final de un script. Los
+comandos también pueden ir precedidos de caracteres en blanco.
+
+### Resumen de comandos
+Los siguientes comandos son compatibles con GNU `sed`. Algunos son comandos POSIX, mientras que
+otros son extensiones GNU. Los detalles y ejemplos para cada comando se encuentra en las
+siguientes secciones.
+
+```sh
+a\
+text
+```
+Apendice texto después de una línea.
+
+**`a text`**: Apendice texto después de una línea (sintaxis alternativa).
+
+**`b label`**: Subdivisión incondicionalmente a etiqueta. La etiqueta puede omitirse en cuyo
+caso se inicia el siguiente ciclo.
+
+```sh
+c\
+text
+```
+Reemplace (cambie) líneas con texto.
+
+**`c text`**: sintaxis alternativa.
+
+**`d`**: Eliminar el espacio del patrón; comience inmediatamente el siguiente ciclo.
+
+**`D`**: Si el espacio del patrón contiene nuevas líneas, elimine el texto en el patrón hasta
+la nueva línea y reinicie el ciclo con el resultado espacio del patraón, sin leer una nueva
+línea de entrada.
+
+Si el espacio del patrón no contiene nueva línea, inicie un nuevo ciclo normal como si `d`
+emitio el comando.
+
+**`e`**: Ejecuta el comando que se encuentra en el espacio del patrón y reemplaza el espacio
+del patrón con la salida; una nueva línea posterior es suprimido.
+
+**`e command`**: Ejecuta el comando y se envía su salida al flujo de salida. El comando puede
+ejecutarse a través de mútiples líneas, todas menos el último final de una barra.
+
+**`F`**: (nombre de archivo) imprime el nombre del archivo de entrada actual (como resultado
+final de nueva línea).
+
+**`g`**: Reemplace el contenido del espacio de patrón con el contenido del espacio de retención.
+
+**`G`**: Añada una nueva línea al contenido del espacio del patrón, y luego el contenido del
+espacio de retención al del espacio del patrón.
+
+**`h`**: (hold) Reemplace el contenido del espacio de retención con el contenido del espacio
+de patrón.
+
+**`H`**: Añadir una nueva línea al contenido del espacio de espera, y luego el contenido del
+espacio del patrón al del espacio de retención.
+
+```sh
+i\
+text
+```
+Insertar texto antes de una línea.
+
+**`i text`**: sintaxis alternativa.
+
+**`l`**: Imprima el espacio del patrón en una forma inequívoca.
+
+**`n`**: (siguiente) Si la impresión automática no estpa deshabilitada, imprima el espacio del
+patrón luego, independientemente, reemplace el espacio del patrón con la siguiente línea de
+entrada. Si no hay más entradas, entonces `sed` saldrá sin procesar más comandos.
+
+**`N`**: Agregue una nueva línea al pesacio del patrón, luego agregue la siguiente línea al
+espacio del patrón. Si no hay más entradas, entonces, `sed` sale sin procesar más comandos.
+
+**`p`**: Imprima el espacio del patrón.
+
+**`P`**: Imprima el espacio del patrón, hasta la primera <newline>.
+
+**`@[exit-code]`**: Este comando es el mismo que `q`, pero no imprimirá el contenido del
+espacio del patrón. Como `q`, proporciona la capacidad para devolver un código de salida.
+
+**`R filename`**: Una línea cola de nombre de archivo para ser leído e insertado en el flujo
+de salida del ciclo actual, o cuando se lee la siguiente línea de entrada.
+
+**`s/regexp/replacement/[flag]`**: Haga coincidir la expresión regular con el contenido del
+espacio del patrón Si se encuentra, reemplace la cadena coincidente con `replacement`.
+
+**`t label`**: (prueba) Rama a etiqueta solo si ha habido éxito de substitución desde la
+última línea de entrada leída o condicional como fue tomada. La etiqueta puede omitirse, en
+cuyo caso se inicia el siguiente ciclo.
+
+**`T label`**: (casi similar).
+
+**`v [version]`**: Este comando no hace nada, pero hace fallar a `sed` si las extensiones no
+son compatibles, o si la versión solicitada no está disponible.
+
+**`w filename`**: Escribe el espacio del patrón para el nombre del archivo.
+
+**`W filename`**: escriba el nombre del archivo dado la parte del espacio del patrón hasta la
+primera línea nueva.
+
+**`x`**: Intercambia el contenido de los espacio de retención y patrón.
+
+**`y/src/dst/`**: Traduce cualquier carácter en el espacio de patrones que coincida con
+cualquier _source-chars_ con el carácter correspondiente _dest-chars_.
+
+**`z`**: (zap) Este comando vacía el contenido del espacio del patrón.
+
+**`#`**: Comentario.
+
+**`{ cmd; cmd ...}`**: Agrupe varios comandos juntos.
+
+**`=`**: Imprima el número de línea de entrada actual.
+
+**`: label`**: Especifique la ubicación de la etiqueta para comandos de rama (`b`, `t`, `T`).
+
+### El comando `s`
+El comando `s` (sustituto) es probalemente el más importante en `sed` y tiene muchas opciones
+diferentes. La sintaxis del comando `s` es `s/regexp/replacement/flags`.
+
+Su concepto básico es simple: el comando `s` intenta coincidir el espacio de patrón contra la
+expresión regular suministrada _regexp_; si es exitoso, entonces esa parte del espacio de
+patrón será reemplazada con `replacement`.
+
+El reemplazo puede contener (_n_ ser un númer del 1 al 9) referencia, que se refieren a la
+porción de la coincidencia que está contenida entre _n_ y su concidencia. Además, el reemplazo
+puede contener caracteres sin espacio que hacen referncia a toda la porción coincidente del
+espacio de patrón. `\n\(\)&`
+
+Los caracteres `/` pueden ser sustituidos uniformemente por cualquier otro único carácter de
+cualquier comando dado a `s`. El carácter `/` (o cualquier otro carácter se utiliza en su
+lugar) puede aparecer en _regexp_ o _replacement_ solo si está precedido por un carácter `\`.
+
+Finalmente, como extensión GNU `sed`, puede incluir una secuencia especial hecha de una rección
+inversa y una de las letras `L`, `l`, `U`, `u` o `E`. El significado es el siguiente:
+
+**`\L`**: Gire el reemplazo para minúsculas hasta que `\U` o `\E` se encuentren.
+
+**`\l`**: Gire el siguiente carácter a minúscula.
+
+**`\U`**: Gire el reemplazo a mayúsculas hasta que `\L` o `\E` se encuentren.
+
+**`\u`**: Gire el siguiente carácter en mayúscula.
+
+**`\E`**: Detener la conversión de casos iniciada por `\L` o `\U`.
+
+Cuando se está utilizando la bandera `g`, la conversión de casos no propaga desde una expresión
+de la expresión regular a otra. Por ejemplo, cuando se ejecuta el siguiente comando con
+`a-b-` en el espacio de patrón:
+
+    s/\(b\?\)-/x\u\1/g
+
+La salida es `axxB`. Al reemplazar la primera `-`, la secuencia `\u` solo afecta el reemplazo
+vacío de `\1`. No afecta al carácter `x` que es agreagado al espacio del patrón al reemplazar
+`b-` con `xB`.
+
+Por otro lado, `\l` y `\u` afecta al resto del texto de sustitución se van seguidos de una
+sustitución vacía. Con `a-b` en el espacio del patrón:
+
+    s/\(b\?\)-/\u\1x/g
+
+reemplazará `-` con `X` y `b-` con `Bx`. Si este comportamiento es indeseable, puede evitarlo
+agragando una secuencia `\E` después de `\1` en este caso.
+
+Para incluir un literal `\`, `&`, o nueva línea final de reemplazo, asegúrese de preceder lo
+deseado con un `\`.
+
+El comando `s` puede ser seguido por cero o más de las siguientes _flags_:
+
+**`g`**: Aplique el reemplazo a todo con _regexp_, no solo al primero.
+
+**`num`**: Solo reemplaza el número de coincidencia de la _regexp_. Interacción con el comando
+`s`.
+
+**`p`**: Si se realizó la sustitución, imprima el nuevo espacio de patrón. Nota: cuando se
+especifican ambas opciones `p` y `e`, el orden relativo de los dos produce resultados muy
+diferentes. En general `ep` (evalúa luego imprime) es lo que quiere, pero operar al revés puede
+ser útil para depurar. Por esta razón, la versión actual de GNU `sed` interpreta especialmente
+la presencia de `p` tanto antes como después `e`, imprimiendo el espacio del patrón antes y
+después de la evaluación, mientras que en general, opciones para el comando `s` mostrará su
+efecto solo una vez.
+
+**`w filename`**: Si se realizó la sustitución, escriba el resultado en el archivo nombrado.
+Como una extesión GNU `sed`, dos valores especiales del nombre de archivos son soportados:
+`/dev/stderr`, cuando escribe el resultado del error estándar, y `/dec/stdout` cuando escribe
+la salida estándar.
+
+**`e`**: Este comando permite canalizar la entrada desde un comando shell en el espacio de
+patrón. Si se realizó una sustitución, el comando que se encuentra en el espacio de patrón se
+ejecuta y el espacio de patrón se reemplaza con su salida. Se suprime una nueva línea posterior;
+los resultados no están definidos si el comando a ejecutar es un carácter Null.
+Esto es una extensión GNU `sed`.
+
+**`I i`**: Modificardor a la coincidencia de expresión regular es una extensión GNU _regexp_
+en manera insensible.
+
+**`M m`**: El modificador a la coincidencia de expresión es un GNU `sed` que dirige para que
+coincida con la expresión regular en multi-línea. Coincide al principio o al final de la línea
+`^` y `$` (`\` y `\`).
