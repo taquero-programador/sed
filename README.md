@@ -248,7 +248,7 @@ Los comandos dentro de un script se pueden separar por punpt y coma (`;`) o nuev
 
 Los siguientes ejemplos son todos equivalentes. Realizar dos operaciones `sed`: eliminar
 cualquier línea que coincida con la expresión regular `/^foo/`, y reemplazando todas las
-ocurrencas de la cadena `hola` con `mundo`:
+ocurrencas de la cadena `hello` con `world`:
 
 ```sh
 sed '/^foo/d/ ; s/hello/world/' input.txt > output.txt
@@ -462,3 +462,182 @@ en manera insensible.
 **`M m`**: El modificador a la coincidencia de expresión es un GNU `sed` que dirige para que
 coincida con la expresión regular en multi-línea. Coincide al principio o al final de la línea
 `^` y `$` (`\` y `\`).
+
+### Comandos de uso frecuente
+
+**`#`**: [No permite direcciones] El `#` carácter comienza con un comentario; el comentario
+continúa hasta la próxima nueva línea.
+
+Si le preocupa la portabilidad, tenga en cuneta que algunas implementaciones de `sed` solo pueden
+admitir un solo comentario de una línea y luego solo cuando el primer carácter del script es un `#`.
+
+Advetencia: si los dos primeros caracteres de un script son `#n`, entonces la opción `-n` es
+forzada. Si quieres poner un comentario en la primera línea de un script y ese comentario comienza
+con la letra `n` y no se quiere este comportamieto, asegúrese de usar un `N` mayúscula o coloque un
+espacio antes de la `n`.
+
+**`q[exit-code]`**: Salir de `sed` sin procesar más comandos o entradas.
+
+Ejemplo: parar después de imprimir la segunda línea:
+```sh
+seq 3 | sed 2q
+1
+2
+```
+
+Este comando solo acepta una dirección. Tenga en cuenta que el espacio del patrón actual se
+imprime si la impresión automática es no deshabilitada con la opción `-n`. La habilidad de
+devolver un código de `sed` script es una extensión GNU `sed`.
+
+**`d`**: Eliminar el espacio del patrón; comience inmediatamente el siguiente ciclo.
+
+Ejemplo: eliminar la segunda línea de entrada:
+```sh
+seq 3 | sed 2d
+1
+2
+```
+
+**`p`**: Imprima el espacio del patrón (a la salida estándar). Este comando generalmente solo
+se usa junto con la opción `-n` de la línea de comandos.
+
+Ejemplo: imprima solo la segunda línea de entrada:
+```sh
+seq 3 | sed -n 2p
+2
+```
+
+**`n`**: Si la impresión automática no está deshabilitada, imprima el espacio del patrón,
+independientemente, reemplace el espacio del patrón con la siguiente línea de entrada. Si no
+hay más entradas `sed` saldrá sin procesar más comandos.
+
+Este comando es útil para omitir líneas (por ejemplo, procesar cada línea Nth).
+
+Ejemplo: realizar la sustitución en cada 3 líneas (es decir, cada `n` comandos omitos dos líneas)
+```sh
+seq 6 | sed 'n;n;s/./x/'
+1
+2
+x
+4
+5
+x
+```
+
+GNU `sed` proporciona una sintaxis de dirección de estensión _first-step_ para logar el mismo
+resultado:
+```sh
+seq 6 | sed '0~3s/./x/'
+1
+2
+x
+4
+5
+x
+```
+
+**`{ commands }`**: Un grupo de comandos puede estar encerrado entre `{}`. Esto es
+particularmente útil cuando desea un grupo de comandos para ser activado por una única
+coincidencia de dirección (o rango de dirección).
+
+Ejemplo: realice la sustición y luego imprima la segunda línea de entrada:
+```sh
+seq 3 | sed -n '2{s/2/X/ ; p}'
+x
+```
+
+### Comandos menos frecuentes
+Aunque quizás se usa con menos frecuencia que los de la sección anterior, algunas muy pequeñas
+pero útiles scripts de `sed` se pueden construir con estos comandos.
+
+**`y/source-char/dest-char/`**: Traduce cualquier carácter en el espacio del patro que
+coincida con cualquiera de los caracteres de `source-char`
+
+Ejemplo: transliterar `a-j` en `0-9`:
+```sh
+echo hello world | sed 'y/abcdefghij/0123456789/'
+74lo worl3
+```
+
+El carácter de `/` puede ser reemplazado por cualquier otro carácter.
+
+Instancia de `/`, `\`, o pueden aparecer nuevas líneas en `source-char` o `dest-char`, siempre
+que cada instancia se escape por un `\`. La `source-char` y `dest-char` deben contener el mismo
+número de caracteres.
+
+**`a text`**: Añade texto despues de una línea. Esta es una extensión GNU estándar al comando
+`a`.
+
+Ejemplo: agregue la palabra `hello` después de la segunda línea:
+```sh
+seq 3 | sed '2a hello'
+1
+2
+hello
+3
+```
+
+Los espacios iniciales después del comando `a` se ignoran. El texto a añadir se lee hasta el
+final de la línea.
+
+```sh
+a\
+text
+```
+Añade texto después de una línea.
+
+Ejemplo: agreagar `hello` después de la segunda línea (`-` indica líneas de salida impresas):
+```sh
+eq 3 | sed '2a\
+hello'
+-|1
+-|2
+-|hello
+-|3
+```
+
+El comando `a` pone en cola las líneas de texto que siguen este comando para salir al final del
+ciclo actual, o cuando se lee la siguiente línea de entrada.
+
+Como un extensión de GNU, este comando acepta dos direcciones.
+
+Secuencias de escape en texto se procesa, por lo que deben usar `\\` para imprimir una sola
+barra invertida.
+
+Los comandos se reanudad después de la última línea sin una rección inversa `\`, `world` en
+el siguiente ejemplo:
+```sh
+seq 3 | sed '2a\
+hello\
+world
+3s/./X/'
+-|1
+-|2
+-|hello
+-|world
+-|X
+```
+
+Como extensión de GNU, el comando `a` y texto pueden ser separado en dos parámetros `-e`, lo que
+permite un script más fácil:
+```sh
+seq 3 | sed -e '2a\' -e hello
+1
+2
+hello
+3
+
+sed -e '2a\' -e $ "$VAR"
+```
+
+**`i text`**: Intertar texto antes de una línea. Esta es una extensión GNU estándar al comando
+`i`.
+
+Ejemplo: Inserte la palabra `hello` antes de la segunda línea:
+```sh
+seq 3 | sed '2i hello'
+1
+hello
+2
+3
+```
